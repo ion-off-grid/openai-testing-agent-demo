@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import logger from "../utils/logger";
+import logger, { aiLogger } from "../utils/logger";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -69,6 +69,14 @@ async function callCUAModel(input: any[], previousResponseId?: string) {
     );
   }
 
+  // Log the full request with the AI logger
+  aiLogger.info({
+    type: "request",
+    endpoint: "responses.create",
+    timestamp: new Date().toISOString(),
+    request: requestBody
+  });
+
   logger.trace(
     `Calling CUA model API with the request body: ${JSON.stringify(
       requestBody,
@@ -76,7 +84,17 @@ async function callCUAModel(input: any[], previousResponseId?: string) {
       2
     )}`
   );
+  
   const response = await openai.responses.create(requestBody);
+
+  // Log the full response with the AI logger
+  aiLogger.info({
+    type: "response",
+    endpoint: "responses.create",
+    timestamp: new Date().toISOString(),
+    responseId: response.id,
+    response: response
+  });
 
   logger.trace("Received response from the model.");
   return response;
@@ -106,12 +124,28 @@ export async function sendInputToModel(
         image_url: `data:image/png;base64,${screenshotBase64}`,
       },
     });
+    
+    // Log screenshot sent to model (without the actual base64 data to avoid bloating logs)
+    aiLogger.info({
+      type: "screenshot",
+      timestamp: new Date().toISOString(),
+      callId: lastCallId,
+      previousResponseId,
+      hasUserMessage: !!userMessage
+    });
   }
 
   if (userMessage) {
     input.push({
       role: "user",
       content: userMessage,
+    });
+    
+    // Log user message sent to model
+    aiLogger.info({
+      type: "user_message",
+      timestamp: new Date().toISOString(),
+      message: userMessage
     });
   }
 
@@ -123,6 +157,15 @@ export async function sendFunctionCallOutput(
   previousResponseId: string,
   outputObj: object = {}
 ): Promise<OpenAIResponse> {
+  // Log function call output sent to model
+  aiLogger.info({
+    type: "function_call_output",
+    timestamp: new Date().toISOString(),
+    callId,
+    previousResponseId,
+    output: outputObj
+  });
+  
   const input = [
     {
       call_id: callId,
@@ -147,6 +190,15 @@ export async function setupCUAModel(systemPrompt: string, userInfo: string) {
       `;
 
   logger.trace(`CUA system prompt: ${cua_initiation_prompt}`);
+  
+  // Log system prompt initialization
+  aiLogger.info({
+    type: "initialization",
+    timestamp: new Date().toISOString(),
+    systemPrompt: cua_initiation_prompt,
+    userSystemPrompt: systemPrompt,
+    hasUserInfo: !!userInfo
+  });
 
   input.push({
     role: "system",
