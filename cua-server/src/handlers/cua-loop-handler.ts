@@ -28,9 +28,17 @@ export async function cuaLoopHandler(
 
   try {
     const browser = await chromium.launch({
-      headless: false,
+      headless: true,
       env: {},
-      args: ["--disable-extensions", "--disable-file-system"],
+      args: [
+        "--disable-extensions", 
+        "--disable-file-system",
+        "--headless=new", 
+        "--disable-gpu",
+        "--no-sandbox", 
+        "--disable-dev-shm-usage",
+        "--use-gl=swiftshader"
+      ],
     });
 
     logger.debug("Creating new browser instance...");
