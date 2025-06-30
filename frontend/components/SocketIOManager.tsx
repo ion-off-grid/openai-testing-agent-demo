@@ -35,22 +35,30 @@ export function SocketIOManager() {
   useEffect(() => {
     // Connect to standalone WebSocket server
     const SOCKET_SERVER_URL =
-      process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "http://localhost:8000";
-    socket = io(SOCKET_SERVER_URL);
+      process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || "https://testing-agent-backend.iotem.org";
+    socket = io(SOCKET_SERVER_URL, {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+      extraHeaders: {
+        // Use Cloudflare Access service tokens if available
+        'CF-Access-Client-Id': process.env.NEXT_PUBLIC_CF_ACCESS_CLIENT_ID || '',
+        'CF-Access-Client-Secret': process.env.NEXT_PUBLIC_CF_ACCESS_CLIENT_SECRET || '',
+      }
+    });
 
-      socket.on("connect", () =>
-        console.log("[socket] connected:", socket?.id)
-      );
+    socket.on("connect", () =>
+      console.log("[socket] connected:", socket?.id)
+    );
 
-      /* initial JSON test steps */
-      socket.on("testcases", (msg: string) => {
-        try {
-          const parsed = JSON.parse(msg);
-          if (Array.isArray(parsed.steps)) setTestCases(parsed.steps);
-        } catch (err) {
-          console.error("✖ parse testcases", err);
-        }
-      });
+    /* initial JSON test steps */
+    socket.on("testcases", (msg: string) => {
+      try {
+        const parsed = JSON.parse(msg);
+        if (Array.isArray(parsed.steps)) setTestCases(parsed.steps);
+      } catch (err) {
+        console.error("✖ parse testcases", err);
+      }
+    });
 
       /* step‑by‑step status updates */
       socket.on("testscriptupdate", (payload: string | object) => {

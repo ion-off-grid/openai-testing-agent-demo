@@ -23,7 +23,12 @@ const httpServer = http.createServer((req, res) => {
 const io = new SocketIOServer(httpServer, {
   cors: {
     origin: CORS_ORIGIN,
+    methods: ["GET", "POST"],
+    credentials: true,
+    allowedHeaders: ["CF-Access-Client-Id", "CF-Access-Client-Secret", "Content-Type"]
   },
+  allowEIO3: true, // Allow older versions of Socket.IO clients
+  transports: ['websocket', 'polling'], // Try websocket first, fallback to polling
 });
 
 io.on("connection", (socket) => {
