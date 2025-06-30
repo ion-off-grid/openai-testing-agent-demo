@@ -18,11 +18,21 @@ export class LoginService {
     page: Page
   ): Promise<boolean> {
     try {
-      /* Username */
-      await page
-        .getByPlaceholder("Username")
-        .first()
-        .fill(username, { timeout: 5_000 });
+      /* Username or Email */
+      try {
+        // Try Username placeholder first
+        await page
+          .getByPlaceholder("Username")
+          .first()
+          .fill(username, { timeout: 2_000 });
+      } catch (error) {
+        // If Username fails, try Email placeholder
+        logger.debug("Username placeholder not found, trying Email placeholder");
+        await page
+          .getByPlaceholder("Email")
+          .first()
+          .fill(username, { timeout: 2_000 });
+      }
 
       /* Password */
       await page
